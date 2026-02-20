@@ -10,6 +10,7 @@ createApp({
         const answers = ref([]);
         const transitionDirection = ref('slide-left');
         const savedProgress = ref(null);
+        const isSendingEmail = ref(false);
 
         // Questions Data
         const questions = ref([
@@ -325,7 +326,7 @@ createApp({
             currentQuestionIndex.value = index;
         };
 
-        const submitQuiz = () => {
+        const submitQuiz = async () => {
             // Check if all questions are answered
             const unansweredIndex = answers.value.findIndex(answer => answer === null || answer === undefined);
             
@@ -351,6 +352,43 @@ createApp({
             
             // Clear saved progress since quiz is complete
             localStorage.removeItem('doshaQuizProgress');
+
+            // Send email with results
+            const userEmail = localStorage.getItem('quizEmail');
+            if (userEmail) {
+                isSendingEmail.value = true;
+                showToastMessage('Sending your results via email...', 'info');
+                
+                try {
+                    const response = await fetch('/.netlify/functions/send-results', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userEmail: userEmail,
+                            results: results.value,
+                            userName: userEmail ? userEmail.split('@')[0] : 'there'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showToastMessage('Results sent to your email!', 'success');
+                        console.log('Email sent successfully:', data);
+                    } else {
+                        throw new Error(data.error || 'Failed to send email');
+                    }
+                } catch (error) {
+                    console.error('Error sending email:', error);
+                    showToastMessage('Could not send email. You can still view your results below.', 'error');
+                } finally {
+                    isSendingEmail.value = false;
+                }
+            } else {
+                showToastMessage('No email found. Please return to the home page and enter your email.', 'error');
+            }
         };
 
         const exitQuiz = () => {
@@ -442,6 +480,7 @@ createApp({
             progressPercentage,
             answeredCount,
             results,
+            isSendingEmail,
             startQuiz,
             nextQuestion,
             previousQuestion,

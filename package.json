@@ -1,0 +1,11 @@
+{
+  "name": "well-with-avril",
+  "version": "1.0.0",
+  "description": "Well with Avril Quiz Site",
+  "dependencies": {
+    "resend": "^3.0.0"
+  },
+  "scripts": {
+    "dev": "netlify dev"
+  }
+}

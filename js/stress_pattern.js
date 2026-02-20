@@ -8,6 +8,7 @@ createApp({
         const showResults = ref(false);
         const showExitDialog = ref(false);
         const transitionDirection = ref('slide-left');
+        const isSendingEmail = ref(false);
 
         // Pattern Categories Data - directly from your content
         const patternCategories = ref([
@@ -159,6 +160,33 @@ createApp({
             return sectionsCompleted.value === totalSections.value;
         });
 
+        // Generate results for email
+        const getResultsSummary = computed(() => {
+            const categoryCounts = patternCategories.value.map(cat => ({
+                name: cat.name,
+                emoji: cat.emoji,
+                count: cat.patterns.filter(p => p.checked).length,
+                total: cat.patterns.length,
+                patterns: cat.patterns.filter(p => p.checked).map(p => p.text)
+            }));
+
+            const topPatterns = patternCategories.value
+                .flatMap(cat => cat.patterns.filter(p => p.checked))
+                .slice(0, 5);
+
+            return {
+                totalChecked: totalChecked.value,
+                categoryCounts,
+                topPatterns: topPatterns.map(p => p.text),
+                reflection: {
+                    otherPatterns: reflection.value.otherPatterns,
+                    topThree: reflection.value.topThree.filter(t => t.trim() !== ''),
+                    showUpOften: reflection.value.showUpOften
+                },
+                completedDate: new Date().toLocaleString()
+            };
+        });
+
         // Methods
         const startQuiz = () => {
             quizStarted.value = true;
@@ -252,7 +280,7 @@ createApp({
             currentSection.value = index;
         };
 
-        const submitQuiz = () => {
+        const submitQuiz = async () => {
             if (!allSectionsComplete.value) {
                 const firstIncomplete = sections.value.findIndex(s => !s.isComplete);
                 jumpToSection(firstIncomplete);
@@ -272,13 +300,51 @@ createApp({
                 return;
             }
 
+            // Show results
             showResults.value = true;
             
+            // Clear saved progress since quiz is complete
             localStorage.removeItem('stressPatternProgress');
             
+            // Save to history
             saveToHistory();
             
-            showToastMessage('Your reflection is ready!', 'success');
+            // Send email with results
+            const userEmail = localStorage.getItem('quizEmail');
+            if (userEmail) {
+                isSendingEmail.value = true;
+                showToastMessage('Sending your reflection via email...', 'info');
+                
+                try {
+                    const response = await fetch('/.netlify/functions/send-stress-results', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            userEmail: userEmail,
+                            results: getResultsSummary.value,
+                            userName: userEmail ? userEmail.split('@')[0] : 'there'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        showToastMessage('Your stress patterns have been sent to your email!', 'success');
+                        console.log('Email sent successfully:', data);
+                    } else {
+                        throw new Error(data.error || 'Failed to send email');
+                    }
+                } catch (error) {
+                    console.error('Error sending email:', error);
+                    showToastMessage('Could not send email. You can still view your results below.', 'error');
+                } finally {
+                    isSendingEmail.value = false;
+                }
+            } else {
+                showToastMessage('No email found. Please return to the home page and enter your email.', 'error');
+            }
         };
 
         const saveToHistory = () => {
@@ -401,6 +467,7 @@ createApp({
             getReflectionProgress,
             hasReflection,
             hasTopThree,
+            isSendingEmail,
             startQuiz,
             togglePattern,
             nextSection,
