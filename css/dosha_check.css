@@ -1,0 +1,243 @@
+/* Custom Font Families */
+.font-over-rainbow {
+    font-family: 'Over the Rainbow', cursive;
+}
+
+.font-poppins {
+    font-family: 'Poppins', sans-serif;
+}
+
+.font-ubuntu {
+    font-family: 'Ubuntu', sans-serif;
+}
+
+/* Animations */
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+
+/* Slide Transitions for Questions */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+    transition: all 0.3s ease;
+    position: absolute;
+    width: 100%;
+}
+
+.slide-left-enter-from {
+    opacity: 0;
+    transform: translateX(30px);
+}
+
+.slide-left-leave-to {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+
+.slide-right-enter-from {
+    opacity: 0;
+    transform: translateX(-30px);
+}
+
+.slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(30px);
+}
+
+/* Modal Transition */
+.modal-enter-active,
+.modal-leave-active {
+    transition: all 0.3s ease;
+}
+
+.modal-enter-from,
+.modal-leave-to {
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+/* Radio Button Animation */
+input[type="radio"]:checked {
+    animation: radioPulse 0.3s ease;
+}
+
+@keyframes radioPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/* Custom Scrollbar */
+.overflow-y-auto::-webkit-scrollbar {
+    width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background: #6C9571;
+    border-radius: 10px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: #5a7e5e;
+}
+
+/* Toast Notification */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #6C9571;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    box-shadow: 0 5px 20px rgba(108, 149, 113, 0.3);
+    z-index: 2000;
+    animation: slideUp 0.3s ease;
+}
+
+.toast.error {
+    background: #dc2626;
+    box-shadow: 0 5px 20px rgba(220, 38, 38, 0.3);
+}
+
+.toast.success {
+    background: #10b981;
+    box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 100%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+    to {
+        transform: translate(-50%, 100%);
+        opacity: 0;
+    }
+}
+
+/* Question Navigator Pills */
+.question-pill {
+    transition: all 0.3s ease;
+}
+
+.question-pill:hover {
+    transform: scale(1.1);
+}
+
+/* Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    .modal,
+    .modal * {
+        visibility: visible;
+    }
+    
+    .modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white;
+        backdrop-filter: none;
+        padding: 20px;
+    }
+    
+    .modal-content {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    button {
+        display: none !important;
+    }
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+    .slide-left-enter-from,
+    .slide-right-enter-from {
+        transform: translateX(20px);
+    }
+    
+    .slide-left-leave-to,
+    .slide-right-leave-to {
+        transform: translateX(-20px);
+    }
+    
+    .toast {
+        width: 90%;
+        text-align: center;
+        font-size: 0.8rem;
+        padding: 10px 16px;
+    }
+}
+
+/* Loading State */
+.loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Hover Effects */
+.hover-lift {
+    transition: transform 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+}
+
+/* Focus States */
+*:focus-visible {
+    outline: 2px solid #6C9571;
+    outline-offset: 2px;
+}

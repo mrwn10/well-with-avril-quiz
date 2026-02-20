@@ -1,0 +1,282 @@
+/* CSS Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Ubuntu', sans-serif;
+    line-height: 1.6;
+    color: #2c3e50;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Headings - "Over the Rainbow" */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Over the Rainbow', cursive;
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    color: #6C9571;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-top: 0.5rem;
+    text-transform: lowercase;
+}
+
+h2 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+/* Main Container */
+.quiz-container {
+    max-width: 1200px;
+    width: 90%;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 30px;
+    box-shadow: 0 20px 40px rgba(108, 149, 113, 0.15);
+}
+
+/* Header with Logo */
+.quiz-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 0.5rem;
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(108, 149, 113, 0.2);
+}
+
+/* Quiz Selection - Two Column Layout */
+.quiz-selection {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 0 auto;
+}
+
+/* Quiz Cards - Perfectly Balanced */
+.quiz-card {
+    background: #f8f9fa;
+    padding: 2.5rem 2rem;
+    border-radius: 25px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 550px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.quiz-card:hover {
+    border-color: #6C9571;
+    transform: translateY(-5px);
+    box-shadow: 0 20px 30px rgba(108, 149, 113, 0.2);
+}
+
+.quiz-description {
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 1rem;
+    color: #4a5568;
+    margin-bottom: 1.5rem;
+    line-height: 1.7;
+}
+
+.quiz-instruction {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.95rem;
+    color: #6C9571;
+    background: rgba(108, 149, 113, 0.08);
+    padding: 1.2rem;
+    border-radius: 15px;
+    margin: 1rem 0 1.5rem;
+    font-style: italic;
+    border-left: 3px solid #6C9571;
+    flex-grow: 1;
+}
+
+/* Buttons - Poppins with dirty green */
+.btn-primary {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 50px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: #6C9571;
+    color: white;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: auto;
+}
+
+.btn-primary:hover {
+    background: #5a7e5e;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(108, 149, 113, 0.3);
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 30px;
+    max-width: 450px;
+    width: 90%;
+    position: relative;
+    border-top: 5px solid #6C9571;
+    text-align: center;
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+.close-modal {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #6C9571;
+    transition: color 0.3s;
+    line-height: 1;
+}
+
+.close-modal:hover {
+    color: #5a7e5e;
+}
+
+/* Email Form */
+.email-form {
+    margin-top: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 15px 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 50px;
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #6C9571;
+    box-shadow: 0 0 0 3px rgba(108, 149, 113, 0.1);
+}
+
+.privacy-note {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    color: #6C9571;
+    text-align: center;
+    margin-top: 1rem;
+    opacity: 0.8;
+}
+
+/* Hidden Class */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .quiz-container {
+        width: 95%;
+        padding: 1.5rem;
+        margin: 1rem auto;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .quiz-selection {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .quiz-card {
+        min-height: auto;
+        padding: 2rem 1.5rem;
+    }
+
+    h2 {
+        font-size: 1.8rem;
+    }
+
+    .modal-content {
+        padding: 2rem 1.5rem;
+        width: 95%;
+    }
+}
+
+/* Tablet Styles */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .quiz-container {
+        width: 95%;
+    }
+    
+    .quiz-card {
+        padding: 2rem 1.5rem;
+        min-height: 500px;
+    }
+}

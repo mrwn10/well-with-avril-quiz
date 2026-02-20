@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/webp" href="../img/logo.webp">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Over+the+Rainbow&family=Poppins:wght@400;500;600&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="../css/dosha_check.css">
+    
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <title>Well with Avril | Dosha Check</title>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen flex items-center justify-center font-ubuntu">
+    <!-- Main Container -->
+    <main id="app" class="max-w-4xl w-[90%] my-8 p-6 md:p-8 bg-white rounded-[30px] shadow-[0_20px_40px_rgba(108,149,113,0.15)] mx-auto relative">
+        <!-- Exit Quiz Button (always visible when quiz started) -->
+        <div v-if="quizStarted" class="absolute top-4 right-4 md:top-6 md:right-6 z-10">
+            <button @click="showExitDialog = true" 
+                    class="flex items-center gap-2 px-4 py-2 text-gray-500 hover:text-[#6C9571] transition-colors duration-300 rounded-full hover:bg-gray-100">
+                <i class="fas fa-times"></i>
+                <span class="hidden md:inline">Exit Quiz</span>
+            </button>
+        </div>
+
+        <!-- Header with Logo -->
+        <header class="text-center mb-8 md:mb-12">
+            <img src="../img/logo.webp" alt="Well with Avril Logo" 
+                 class="w-16 h-16 md:w-20 md:h-20 mx-auto mb-2 rounded-full shadow-[0_5px_15px_rgba(108,149,113,0.2)]">
+            <h1 class="font-over-rainbow text-3xl md:text-4xl lg:text-5xl text-[#6C9571] lowercase mt-2">well with avril</h1>
+        </header>
+
+        <!-- Quiz Introduction -->
+        <section v-if="!quizStarted" class="text-center mb-12 p-6 md:p-8 bg-gradient-to-br from-[rgba(108,149,113,0.05)] to-[rgba(108,149,113,0.1)] rounded-[30px]">
+            <h2 class="font-over-rainbow text-2xl md:text-3xl lg:text-4xl text-[#6C9571] mb-6">Dosha Check</h2>
+            <p class="font-ubuntu text-gray-700 mb-4 leading-relaxed text-sm md:text-base">In Ayurveda, an ancient system of holistic health, your Dosha reflects your natural mind–body rhythm. There are three Doshas—Vata, Pitta, and Kapha—each influencing how you move through life, relate to stress, and experience energy.</p>
+            <p class="font-poppins text-xs md:text-sm text-[#6C9571] bg-[rgba(108,149,113,0.08)] p-4 md:p-5 rounded-[15px] my-4 italic border-l-4 border-[#6C9571]">For each section, choose the statement that feels most true for you, based on your body, habits, mood, and tendencies. There are no right or wrong answers, just patterns.</p>
+            
+            <!-- Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <button @click="startQuiz" 
+                        class="font-poppins font-medium px-8 py-4 bg-[#6C9571] text-white rounded-[50px] text-base md:text-lg cursor-pointer transition-all duration-300 uppercase tracking-wider hover:bg-[#5a7e5e] hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(108,149,113,0.3)] group">
+                    Begin Assessment <i class="fas fa-arrow-right ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
+                </button>
+                <button @click="goHome" 
+                        class="font-poppins font-medium px-8 py-4 border-2 border-[#6C9571] text-[#6C9571] rounded-[50px] text-base md:text-lg cursor-pointer transition-all duration-300 hover:bg-[#6C9571] hover:text-white">
+                    Back to Quizzes
+                </button>
+            </div>
+        </section>
+
+        <!-- Quiz Progress & Navigation -->
+        <div v-if="quizStarted" class="mb-6 md:mb-8">
+            <!-- Progress Bar -->
+            <div class="px-4">
+                <div class="flex justify-between mb-2 font-poppins text-xs md:text-sm text-[#6C9571] font-medium">
+                    <span>Question {{ currentQuestionIndex + 1 }} of {{ questions.length }}</span>
+                    <div class="flex items-center gap-3">
+                        <span>{{ answeredCount }}/{{ questions.length }} answered</span>
+                        <span class="text-gray-400">|</span>
+                        <span>{{ progressPercentage }}% complete</span>
+                    </div>
+                </div>
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-[#6C9571] to-[#8ab88f] rounded-full transition-all duration-300 relative overflow-hidden"
+                         :style="{ width: progressPercentage + '%' }">
+                        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Question Navigator Pills -->
+            <div class="flex flex-wrap gap-2 justify-center mt-4 px-4">
+                <button v-for="(_, index) in questions" 
+                        :key="index"
+                        @click="jumpToQuestion(index)"
+                        class="w-8 h-8 md:w-10 md:h-10 rounded-full text-sm font-medium transition-all duration-300"
+                        :class="[
+                            currentQuestionIndex === index 
+                                ? 'bg-[#6C9571] text-white scale-110 shadow-md' 
+                                : answers[index] 
+                                    ? 'bg-[#6C9571] bg-opacity-20 text-[#6C9571] hover:bg-opacity-30' 
+                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        ]">
+                    {{ index + 1 }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Questions Form -->
+        <form v-if="quizStarted" @submit.prevent="submitQuiz" class="mt-6 md:mt-8">
+            <!-- Current Question Card -->
+            <transition :name="transitionDirection" mode="out-in">
+                <div :key="currentQuestionIndex" class="bg-gray-50 p-6 md:p-8 rounded-[25px] border-2 transition-all duration-300 shadow-[0_10px_20px_rgba(0,0,0,0.05)] mb-6"
+                     :class="answers[currentQuestionIndex] ? 'border-[#6C9571]' : 'border-transparent'">
+                    
+                    <div class="text-center mb-6 md:mb-8">
+                        <span class="inline-block font-poppins text-xs md:text-sm text-[#6C9571] bg-[rgba(108,149,113,0.1)] px-4 py-1.5 rounded-full mb-4">
+                            Question {{ currentQuestionIndex + 1 }}/{{ questions.length }}
+                        </span>
+                        <h3 class="font-over-rainbow text-xl md:text-2xl lg:text-3xl text-[#6C9571]">{{ questions[currentQuestionIndex].title }}</h3>
+                    </div>
+
+                    <div class="flex flex-col gap-3 md:gap-4">
+                        <label v-for="(option, optIndex) in questions[currentQuestionIndex].options" 
+                               :key="optIndex"
+                               class="flex items-start gap-3 md:gap-4 p-4 md:p-5 bg-white rounded-[15px] cursor-pointer transition-all duration-200 border-2"
+                               :class="[
+                                   answers[currentQuestionIndex] === option.value 
+                                       ? 'border-[#6C9571] bg-[rgba(108,149,113,0.05)] shadow-md' 
+                                       : 'border-transparent hover:border-[#6C9571] hover:bg-[rgba(108,149,113,0.05)] hover:translate-x-1 hover:shadow-md'
+                               ]">
+                            
+                            <input type="radio" 
+                                   :name="'question_' + currentQuestionIndex" 
+                                   :value="option.value"
+                                   v-model="answers[currentQuestionIndex]"
+                                   class="appearance-none w-4 h-4 md:w-5 md:h-5 border-2 border-[#6C9571] rounded-full mt-0.5 cursor-pointer transition-all duration-200 checked:bg-[#6C9571] checked:border-[#6C9571] checked:shadow-[inset_0_0_0_4px_white] focus:outline-none focus:ring-3 focus:ring-[rgba(108,149,113,0.3)]">
+                            
+                            <span class="font-ubuntu text-sm md:text-base text-gray-700 leading-relaxed flex-1">{{ option.text }}</span>
+                            
+                            <!-- Selected Check Icon -->
+                            <i v-if="answers[currentQuestionIndex] === option.value" 
+                               class="fas fa-check-circle text-[#6C9571] text-lg md:text-xl"></i>
+                        </label>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Navigation Buttons -->
+            <div class="flex flex-col sm:flex-row justify-between gap-3 mt-6 md:mt-8 px-4">
+                <div class="flex gap-3">
+                    <button type="button" 
+                            @click="previousQuestion"
+                            :disabled="currentQuestionIndex === 0"
+                            class="px-4 md:px-6 py-3 font-poppins font-medium rounded-[50px] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+                            :class="currentQuestionIndex === 0 
+                                ? 'border-2 border-gray-300 text-gray-400' 
+                                : 'border-2 border-[#6C9571] text-[#6C9571] hover:bg-[#6C9571] hover:text-white hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(108,149,113,0.2)]'">
+                        <i class="fas fa-arrow-left text-xs md:text-sm"></i> Previous
+                    </button>
+
+                    <button type="button" 
+                            @click="showExitDialog = true"
+                            class="px-4 md:px-6 py-3 font-poppins font-medium border-2 border-gray-300 text-gray-500 rounded-[50px] transition-all duration-300 flex items-center justify-center gap-2 hover:bg-gray-100 text-sm md:text-base">
+                        <i class="fas fa-times text-xs md:text-sm"></i> Exit
+                    </button>
+                </div>
+
+                <button v-if="currentQuestionIndex < questions.length - 1" 
+                        type="button"
+                        @click="nextQuestion"
+                        class="px-6 md:px-8 py-3 font-poppins font-medium bg-[#6C9571] text-white rounded-[50px] transition-all duration-300 flex items-center justify-center gap-2 hover:bg-[#5a7e5e] hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(108,149,113,0.3)] text-sm md:text-base">
+                    Next <i class="fas fa-arrow-right text-xs md:text-sm"></i>
+                </button>
+
+                <button v-else
+                        type="submit"
+                        class="px-6 md:px-8 py-3 font-poppins font-medium bg-[#6C9571] text-white rounded-[50px] transition-all duration-300 flex items-center justify-center gap-2 hover:bg-[#5a7e5e] hover:-translate-y-0.5 hover:shadow-[0_10px_20px_rgba(108,149,113,0.3)] text-sm md:text-base">
+                    See My Results <i class="fas fa-check text-xs md:text-sm"></i>
+                </button>
+            </div>
+
+        </form>
+
+        <!-- Exit Quiz Confirmation Modal -->
+        <transition name="modal">
+            <div v-if="showExitDialog" 
+                 class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4"
+                 @click.self="showExitDialog = false">
+                <div class="bg-white p-6 md:p-8 rounded-[30px] max-w-md w-full relative border-t-4 border-[#6C9571] text-center">
+                    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
+                        <i class="fas fa-exclamation-triangle text-2xl text-red-500"></i>
+                    </div>
+                    
+                    <h3 class="font-over-rainbow text-2xl text-[#6C9571] mb-3">Exit Quiz?</h3>
+                    
+                    <p class="font-ubuntu text-gray-600 mb-6">
+                        You've answered {{ answeredCount }} out of {{ questions.length }} questions. 
+                        Are you sure you want to exit? Your progress will be lost.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <button @click="showExitDialog = false" 
+                                class="flex-1 px-6 py-3 font-poppins font-medium border-2 border-[#6C9571] text-[#6C9571] rounded-[50px] transition-all duration-300 hover:bg-[#6C9571] hover:text-white">
+                            Continue Quiz
+                        </button>
+                        <button @click="exitQuiz" 
+                                class="flex-1 px-6 py-3 font-poppins font-medium bg-red-500 text-white rounded-[50px] transition-all duration-300 hover:bg-red-600">
+                            Exit & Lose Progress
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- Results Modal -->
+        <transition name="modal">
+            <div v-if="showResults" 
+                 class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm p-4"
+                 @click.self="closeModal">
+                <div class="bg-white p-6 md:p-10 rounded-[30px] max-w-lg w-full relative border-t-4 border-[#6C9571] text-center max-h-[90vh] overflow-y-auto">
+                    <button @click="closeModal" 
+                            class="absolute top-4 right-4 text-3xl text-[#6C9571] cursor-pointer transition-colors hover:text-[#5a7e5e]">
+                        &times;
+                    </button>
+                    
+                    <img src="../img/logo.webp" alt="Well with Avril Logo" 
+                         class="w-16 h-16 rounded-full mb-4 mx-auto">
+                    <h2 class="font-over-rainbow text-2xl md:text-3xl text-[#6C9571] mb-6">Your Dosha Results</h2>
+                    
+                    <!-- Results Content -->
+                    <div class="my-8">
+                        <!-- Score Counts -->
+                        <div class="flex justify-around mb-8">
+                            <div class="text-center">
+                                <span class="block w-10 h-10 leading-10 rounded-full bg-[#6C9571] text-white font-bold mx-auto mb-2">A</span>
+                                <div class="text-2xl font-bold text-[#6C9571]">{{ results.counts.A }}</div>
+                                <div class="text-xs text-gray-500">Vata</div>
+                            </div>
+                            <div class="text-center">
+                                <span class="block w-10 h-10 leading-10 rounded-full bg-[#6C9571] text-white font-bold mx-auto mb-2">B</span>
+                                <div class="text-2xl font-bold text-[#6C9571]">{{ results.counts.B }}</div>
+                                <div class="text-xs text-gray-500">Pitta</div>
+                            </div>
+                            <div class="text-center">
+                                <span class="block w-10 h-10 leading-10 rounded-full bg-[#6C9571] text-white font-bold mx-auto mb-2">C</span>
+                                <div class="text-2xl font-bold text-[#6C9571]">{{ results.counts.C }}</div>
+                                <div class="text-xs text-gray-500">Kapha</div>
+                            </div>
+                        </div>
+
+                        <!-- Score Bars -->
+                        <div v-for="(item, index) in results.bars" :key="index" class="mb-4">
+                            <div class="flex items-center gap-2 md:gap-3">
+                                <span class="font-poppins text-xs md:text-sm text-[#6C9571] w-16">{{ item.label }}</span>
+                                <div class="flex-1 h-8 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-[#6C9571] to-[#8ab88f] text-white text-xs flex items-center justify-end pr-3 transition-all duration-1000"
+                                         :style="{ width: item.percentage + '%' }">
+                                        {{ item.percentage }}%
+                                    </div>
+                                </div>
+                                <span class="font-bold text-[#6C9571] w-8">{{ item.count }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Interpretation -->
+                        <div class="mt-8 p-4 md:p-5 bg-[rgba(108,149,113,0.05)] rounded-[15px] border-l-4 border-[#6C9571] text-left">
+                            <p class="font-ubuntu text-sm md:text-base text-gray-700 mb-3" v-html="results.interpretation"></p>
+                            <p class="font-ubuntu text-xs md:text-sm italic text-[#6C9571]">Understanding your Dosha helps you make lifestyle choices that support your natural mind-body rhythm.</p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                        <button @click="goHome" 
+                                class="flex-1 px-4 md:px-6 py-3 font-poppins font-medium bg-[#6C9571] text-white rounded-[50px] transition-all duration-300 hover:bg-[#5a7e5e] text-sm md:text-base">
+                            Back to Quizzes
+                        </button>
+                        <button @click="printResults" 
+                                class="flex-1 px-4 md:px-6 py-3 font-poppins font-medium border-2 border-[#6C9571] text-[#6C9571] rounded-[50px] transition-all duration-300 hover:bg-[#6C9571] hover:text-white text-sm md:text-base">
+                            <i class="fas fa-print mr-2"></i>Print
+                        </button>
+                        <button @click="restartQuiz" 
+                                class="flex-1 px-4 md:px-6 py-3 font-poppins font-medium border-2 border-gray-300 text-gray-500 rounded-[50px] transition-all duration-300 hover:bg-gray-100 text-sm md:text-base">
+                            <i class="fas fa-redo mr-2"></i>Retake
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
+    </main>
+
+    <script src="../js/dosha_check.js"></script>
+</body>
+</html>

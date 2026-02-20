@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/webp" href="img/logo.webp">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Over+the+Rainbow&family=Poppins:wght@400;500;600&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/style.css">
+    <title>Well with Avril | Quizzes</title>
+</head>
+<body>
+    <!-- Main Container -->
+    <main class="quiz-container">
+        <!-- Header with Logo -->
+        <header class="quiz-header">
+            <img src="img/logo.webp" alt="Well with Avril Logo" class="logo">
+            <h1>well with avril</h1>
+        </header>
+
+        <!-- Quiz Selection -->
+        <section class="quiz-selection">
+            <!-- Dosha Check Card -->
+            <div class="quiz-card" data-quiz="dosha">
+                <h2>Dosha Check</h2>
+                <p class="quiz-description">In Ayurveda, an ancient system of holistic health, your Dosha reflects your natural mind–body rhythm. There are three Doshas—Vata, Pitta, and Kapha—each influencing how you move through life, relate to stress, and experience energy.</p>
+                <p class="quiz-instruction">For each section, choose the statement that feels most true for you, based on your body, habits, mood, and tendencies. There are no right or wrong answers, just patterns.</p>
+                <button class="btn-primary start-quiz" data-quiz="dosha">Start Dosha Quiz</button>
+            </div>
+
+            <!-- Stress Check Card -->
+            <div class="quiz-card" data-quiz="stress">
+                <h2>Stress Pattern Self-Check</h2>
+                <p class="quiz-description">Some patterns listed here may be part of your natural personality or neurotype (for example, ADHD, autism, or other ways of thinking/feeling).</p>
+                <p class="quiz-instruction">If something feels true for you but not necessarily stressful or draining, feel free to leave it unchecked. For those items, gently ask yourself: does this feel unwanted, out of control, or new for me?</p>
+                <button class="btn-primary start-quiz" data-quiz="stress">Start Stress Check</button>
+            </div>
+        </section>
+
+        <!-- Email Modal (Appears after quiz selection) -->
+        <div id="emailModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <img src="img/logo.webp" alt="Well with Avril Logo" class="modal-logo">
+                <h2>Get Your Personalized Results</h2>
+                <p>Enter your email to receive your complete quiz scores and insights.</p>
+                
+                <form id="emailForm" class="email-form">
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" placeholder="your@email.com" required>
+                        <button type="submit" class="btn-primary">Continue to Quiz</button>
+                    </div>
+                    <p class="privacy-note">🔒 Your privacy matters. We'll only use this to send your scores.</p>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+</html>
