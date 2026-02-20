@@ -241,6 +241,7 @@ createApp({
             const pattern = patternCategories.value[categoryIndex].patterns[patternIndex];
             pattern.checked = !pattern.checked;
             
+            // Optional haptic feedback on mobile
             if (window.navigator && window.navigator.vibrate) {
                 window.navigator.vibrate(10);
             }
@@ -287,10 +288,12 @@ createApp({
                 
                 showToastMessage('Please complete each section with at least one answer', 'error');
                 
+                // Highlight the incomplete section
                 setTimeout(() => {
                     const sectionCard = document.querySelector('.bg-gray-50, .bg-gradient-to-br');
                     if (sectionCard) {
                         sectionCard.style.borderColor = '#dc2626';
+                        sectionCard.style.transition = 'border-color 0.3s ease';
                         setTimeout(() => {
                             sectionCard.style.borderColor = sections.value[currentSection.value].isComplete ? '#6C9571' : 'transparent';
                         }, 1000);
@@ -300,7 +303,7 @@ createApp({
                 return;
             }
 
-            // Show results
+            // Show results immediately
             showResults.value = true;
             
             // Clear saved progress since quiz is complete
@@ -309,65 +312,96 @@ createApp({
             // Save to history
             saveToHistory();
             
-            // Send email with results
+            // Send email with results (don't await - let it happen in background)
             const userEmail = localStorage.getItem('quizEmail');
             if (userEmail) {
                 isSendingEmail.value = true;
-                showToastMessage('Sending your reflection via email...', 'info');
+                showToastMessage('Sending your results via email...', 'info');
                 
-                try {
-                    const response = await fetch('/.netlify/functions/send-stress-results', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userEmail: userEmail,
-                            results: getResultsSummary.value,
-                            userName: userEmail ? userEmail.split('@')[0] : 'there'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        showToastMessage('Your stress patterns have been sent to your email!', 'success');
-                        console.log('Email sent successfully:', data);
-                    } else {
-                        throw new Error(data.error || 'Failed to send email');
-                    }
-                } catch (error) {
-                    console.error('Error sending email:', error);
-                    showToastMessage('Could not send email. You can still view your results below.', 'error');
-                } finally {
+                // Send email in background without blocking
+                sendResultsEmail(userEmail).finally(() => {
                     isSendingEmail.value = false;
-                }
+                });
             } else {
-                showToastMessage('No email found. Please return to the home page and enter your email.', 'error');
+                showToastMessage('No email found. Please return to the home page and enter your email for future sessions.', 'warning');
+            }
+        };
+
+        // Separate function to send email
+        const sendResultsEmail = async (userEmail) => {
+            try {
+                console.log('Sending email to:', userEmail);
+                console.log('Results summary:', getResultsSummary.value);
+                
+                const response = await fetch('/.netlify/functions/send-stress-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userEmail: userEmail,
+                        results: getResultsSummary.value,
+                        userName: userEmail ? userEmail.split('@')[0] : 'there'
+                    })
+                });
+                
+                // Get response text first for debugging
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                // Try to parse as JSON
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse response as JSON:', responseText);
+                    throw new Error('Invalid response from server');
+                }
+                
+                if (response.ok) {
+                    showToastMessage('Your stress patterns have been sent to your email!', 'success');
+                    console.log('Email sent successfully:', data);
+                } else {
+                    throw new Error(data.error || `Server error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error sending email:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+                showToastMessage('Could not send email. You can still view your results below.', 'error');
             }
         };
 
         const saveToHistory = () => {
-            const history = JSON.parse(localStorage.getItem('stressPatternHistory') || '[]');
-            history.push({
-                date: new Date().toISOString(),
-                totalChecked: totalChecked.value,
-                sectionsCompleted: sectionsCompleted.value,
-                reflection: {
-                    otherPatterns: reflection.value.otherPatterns,
-                    topThree: reflection.value.topThree.filter(t => t),
-                    showUpOften: reflection.value.showUpOften
-                }
-            });
-            if (history.length > 10) history.shift();
-            localStorage.setItem('stressPatternHistory', JSON.stringify(history));
+            try {
+                const history = JSON.parse(localStorage.getItem('stressPatternHistory') || '[]');
+                history.push({
+                    date: new Date().toISOString(),
+                    totalChecked: totalChecked.value,
+                    sectionsCompleted: sectionsCompleted.value,
+                    reflection: {
+                        otherPatterns: reflection.value.otherPatterns,
+                        topThree: reflection.value.topThree.filter(t => t),
+                        showUpOften: reflection.value.showUpOften
+                    }
+                });
+                // Keep only last 10 entries
+                if (history.length > 10) history.shift();
+                localStorage.setItem('stressPatternHistory', JSON.stringify(history));
+            } catch (e) {
+                console.error('Error saving to history:', e);
+            }
         };
 
         const exitQuiz = () => {
             showExitDialog.value = false;
             
+            // Clear saved progress
             localStorage.removeItem('stressPatternProgress');
             
+            // Reset quiz state
             quizStarted.value = false;
             resetAll();
             
@@ -394,17 +428,37 @@ createApp({
             window.print();
         };
 
+        // Toast notification system
         const showToastMessage = (message, type = 'info') => {
+            // Remove any existing toast
             const existingToast = document.querySelector('.toast');
             if (existingToast) {
                 existingToast.remove();
             }
 
+            // Create new toast
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#6C9571'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 50px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.9rem;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: slideUp 0.3s ease;
+            `;
+            
             document.body.appendChild(toast);
 
+            // Auto remove after 3 seconds
             setTimeout(() => {
                 toast.style.animation = 'slideDown 0.3s ease';
                 setTimeout(() => {
@@ -415,10 +469,12 @@ createApp({
             }, 3000);
         };
 
+        // Keyboard navigation
         const setupKeyboardNavigation = () => {
             document.addEventListener('keydown', (e) => {
                 if (!quizStarted.value || showResults.value || showExitDialog.value) return;
 
+                // Don't navigate if user is typing in an input
                 if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                     if (e.key === 'ArrowRight') {
                         e.preventDefault();
@@ -433,6 +489,7 @@ createApp({
             });
         };
 
+        // Auto-save progress
         watch([patternCategories, reflection], () => {
             if (quizStarted.value) {
                 localStorage.setItem('stressPatternProgress', JSON.stringify({
@@ -444,11 +501,43 @@ createApp({
             }
         }, { deep: true });
 
+        // Lifecycle hooks
         onMounted(() => {
             setupKeyboardNavigation();
+            
+            // Add animation styles if they don't exist
+            if (!document.querySelector('#toast-animations')) {
+                const style = document.createElement('style');
+                style.id = 'toast-animations';
+                style.textContent = `
+                    @keyframes slideUp {
+                        from {
+                            transform: translate(-50%, 100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translate(-50%, 0);
+                            opacity: 1;
+                        }
+                    }
+                    
+                    @keyframes slideDown {
+                        from {
+                            transform: translate(-50%, 0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translate(-50%, 100%);
+                            opacity: 0;
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
         });
 
         return {
+            // State
             quizStarted,
             currentSection,
             showResults,
@@ -457,6 +546,9 @@ createApp({
             patternCategories,
             currentSectionData,
             reflection,
+            isSendingEmail,
+            
+            // Computed
             totalSections,
             totalChecked,
             sectionsCompleted,
@@ -467,7 +559,8 @@ createApp({
             getReflectionProgress,
             hasReflection,
             hasTopThree,
-            isSendingEmail,
+            
+            // Methods
             startQuiz,
             togglePattern,
             nextSection,

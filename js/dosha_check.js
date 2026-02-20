@@ -1,4 +1,4 @@
-const { createApp, ref, computed, watch } = Vue;
+const { createApp, ref, computed, watch, onMounted } = Vue;
 
 createApp({
     setup() {
@@ -353,41 +353,70 @@ createApp({
             // Clear saved progress since quiz is complete
             localStorage.removeItem('doshaQuizProgress');
 
-            // Send email with results
+            // Send email with results (don't await - let it happen in background)
             const userEmail = localStorage.getItem('quizEmail');
             if (userEmail) {
                 isSendingEmail.value = true;
                 showToastMessage('Sending your results via email...', 'info');
                 
-                try {
-                    const response = await fetch('/.netlify/functions/send-results', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            userEmail: userEmail,
-                            results: results.value,
-                            userName: userEmail ? userEmail.split('@')[0] : 'there'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        showToastMessage('Results sent to your email!', 'success');
-                        console.log('Email sent successfully:', data);
-                    } else {
-                        throw new Error(data.error || 'Failed to send email');
-                    }
-                } catch (error) {
-                    console.error('Error sending email:', error);
-                    showToastMessage('Could not send email. You can still view your results below.', 'error');
-                } finally {
+                // Send email in background without blocking
+                sendResultsEmail(userEmail).finally(() => {
                     isSendingEmail.value = false;
-                }
+                });
             } else {
-                showToastMessage('No email found. Please return to the home page and enter your email.', 'error');
+                showToastMessage('No email found. Please return to the home page and enter your email for future sessions.', 'warning');
+            }
+        };
+
+        // Separate function to send email
+        const sendResultsEmail = async (userEmail) => {
+            try {
+                console.log('Sending dosha results email to:', userEmail);
+                console.log('Results:', results.value);
+                
+                const response = await fetch('/.netlify/functions/send-dosha-results', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        userEmail: userEmail,
+                        results: {
+                            counts: results.value.counts,
+                            primaryDosha: results.value.primaryDosha,
+                            bars: results.value.bars,
+                            interpretation: results.value.interpretation
+                        },
+                        userName: userEmail ? userEmail.split('@')[0] : 'there'
+                    })
+                });
+                
+                // Get response text first for debugging
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                // Try to parse as JSON
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (e) {
+                    console.error('Failed to parse response as JSON:', responseText);
+                    throw new Error('Invalid response from server');
+                }
+                
+                if (response.ok) {
+                    showToastMessage('Your dosha results have been sent to your email!', 'success');
+                    console.log('Email sent successfully:', data);
+                } else {
+                    throw new Error(data.error || `Server error: ${response.status}`);
+                }
+            } catch (error) {
+                console.error('Error sending email:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+                showToastMessage('Could not send email. You can still view your results below.', 'error');
             }
         };
 
@@ -426,17 +455,37 @@ createApp({
             window.print();
         };
 
+        // Toast notification system
         const showToastMessage = (message, type = 'info') => {
+            // Remove any existing toast
             const existingToast = document.querySelector('.toast');
             if (existingToast) {
                 existingToast.remove();
             }
 
+            // Create new toast
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 30px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: ${type === 'error' ? '#dc2626' : type === 'success' ? '#10b981' : type === 'warning' ? '#f59e0b' : '#6C9571'};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 50px;
+                font-family: 'Poppins', sans-serif;
+                font-size: 0.9rem;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+                z-index: 2000;
+                animation: slideUp 0.3s ease;
+            `;
+            
             document.body.appendChild(toast);
 
+            // Auto remove after 3 seconds
             setTimeout(() => {
                 toast.style.animation = 'slideDown 0.3s ease';
                 setTimeout(() => {
@@ -452,6 +501,7 @@ createApp({
             document.addEventListener('keydown', (e) => {
                 if (!quizStarted.value || showResults.value || showExitDialog.value) return;
 
+                // Don't navigate if user is typing in an input
                 if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
                     if (e.key === 'ArrowRight') {
                         e.preventDefault();
@@ -466,10 +516,86 @@ createApp({
             });
         };
 
+        // Add animation styles if they don't exist
+        const addAnimationStyles = () => {
+            if (!document.querySelector('#toast-animations')) {
+                const style = document.createElement('style');
+                style.id = 'toast-animations';
+                style.textContent = `
+                    @keyframes slideUp {
+                        from {
+                            transform: translate(-50%, 100%);
+                            opacity: 0;
+                        }
+                        to {
+                            transform: translate(-50%, 0);
+                            opacity: 1;
+                        }
+                    }
+                    
+                    @keyframes slideDown {
+                        from {
+                            transform: translate(-50%, 0);
+                            opacity: 1;
+                        }
+                        to {
+                            transform: translate(-50%, 100%);
+                            opacity: 0;
+                        }
+                    }
+                    
+                    .slide-left-enter-active,
+                    .slide-left-leave-active,
+                    .slide-right-enter-active,
+                    .slide-right-leave-active {
+                        transition: all 0.3s ease;
+                        position: absolute;
+                        width: 100%;
+                    }
+                    
+                    .slide-left-enter-from {
+                        opacity: 0;
+                        transform: translateX(30px);
+                    }
+                    
+                    .slide-left-leave-to {
+                        opacity: 0;
+                        transform: translateX(-30px);
+                    }
+                    
+                    .slide-right-enter-from {
+                        opacity: 0;
+                        transform: translateX(-30px);
+                    }
+                    
+                    .slide-right-leave-to {
+                        opacity: 0;
+                        transform: translateX(30px);
+                    }
+                    
+                    .modal-enter-active,
+                    .modal-leave-active {
+                        transition: all 0.3s ease;
+                    }
+                    
+                    .modal-enter-from,
+                    .modal-leave-to {
+                        opacity: 0;
+                        transform: scale(0.9);
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+        };
+
         // Initialize
-        setupKeyboardNavigation();
+        onMounted(() => {
+            setupKeyboardNavigation();
+            addAnimationStyles();
+        });
 
         return {
+            // State
             quizStarted,
             currentQuestionIndex,
             showResults,
@@ -477,10 +603,14 @@ createApp({
             answers,
             questions,
             transitionDirection,
+            isSendingEmail,
+            
+            // Computed
             progressPercentage,
             answeredCount,
             results,
-            isSendingEmail,
+            
+            // Methods
             startQuiz,
             nextQuestion,
             previousQuestion,
