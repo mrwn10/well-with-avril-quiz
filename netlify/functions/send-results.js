@@ -4,6 +4,10 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.handler = async (event) => {
+  // Log that function started (useful for debugging)
+  console.log('Send results function triggered');
+  console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
+  
   // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
@@ -13,9 +17,23 @@ exports.handler = async (event) => {
   }
 
   try {
+    // Check if API key is configured
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY is not set');
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ 
+          error: 'Email service not configured',
+          details: 'RESEND_API_KEY is missing'
+        })
+      };
+    }
+
     // Parse the request body
     const data = JSON.parse(event.body);
     const { userEmail, results, userName } = data;
+
+    console.log('Sending email to:', userEmail);
 
     // Validate required fields
     if (!userEmail || !results) {
@@ -29,8 +47,7 @@ exports.handler = async (event) => {
 
     // Email to user
     const userEmailResult = await resend.emails.send({
-      from: 'Well with Avril <onboarding@resend.dev>', // Use this for testing
-      // Once you have custom domain: from: 'Well with Avril <quizzes@wellwithavril.com>',
+      from: 'Well with Avril <onboarding@resend.dev>', // Free tier only allows this sender
       to: [userEmail],
       subject: 'Your Dosha Quiz Results from Well with Avril',
       html: generateUserEmailHTML(results, name)
@@ -41,7 +58,7 @@ exports.handler = async (event) => {
     // Email to admin (you)
     const adminEmailResult = await resend.emails.send({
       from: 'Well with Avril <onboarding@resend.dev>',
-      to: ['wellwithavril02@gmail.com'], // REPLACE WITH YOUR EMAIL
+      to: ['wellwithavril02@gmail.com'],
       subject: `New Quiz Results: ${results.primaryDosha} - ${userEmail}`,
       html: generateAdminEmailHTML(results, userEmail, name)
     });
@@ -58,18 +75,23 @@ exports.handler = async (event) => {
 
   } catch (error) {
     console.error('Resend error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
     
     return {
       statusCode: 500,
       body: JSON.stringify({ 
         error: 'Failed to send email',
-        details: error.message 
+        details: error.message
       })
     };
   }
 };
 
-// Generate HTML for user email
+// Generate HTML for user email (keep your existing function)
 function generateUserEmailHTML(results, userName) {
   const name = userName || 'there';
   
