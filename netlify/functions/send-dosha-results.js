@@ -63,11 +63,14 @@ exports.handler = async (event) => {
     }
 
     const name = userName || userEmail.split('@')[0];
+    
+    // ✅ USING YOUR VERIFIED DOMAIN
+    const fromEmail = 'Well with Avril <noreply@lseftesda.online>';
 
     // Email to user (THE PERSON WHO TOOK THE QUIZ)
     const userEmailResult = await resend.emails.send({
-      from: 'Well with Avril <onboarding@resend.dev>',
-      to: [userEmail],
+      from: fromEmail,
+      to: [userEmail], // ✅ Now works with ANY email!
       subject: 'Your Dosha Quiz Results from Well with Avril',
       html: generateDoshaUserEmailHTML(results, name)
     });
@@ -76,7 +79,7 @@ exports.handler = async (event) => {
 
     // Also send a copy to yourself (admin)
     const adminEmailResult = await resend.emails.send({
-      from: 'Well with Avril <onboarding@resend.dev>',
+      from: fromEmail,
       to: ['wellwithavril02@gmail.com'],
       subject: `[ADMIN] New Dosha Quiz Results: ${results.primaryDosha} - ${userEmail}`,
       html: generateDoshaAdminEmailHTML(results, userEmail, name)

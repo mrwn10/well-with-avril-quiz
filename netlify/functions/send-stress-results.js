@@ -1,29 +1,20 @@
 const { Resend } = require('resend');
 
-// Initialize Resend with API key from environment variables
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.handler = async (event) => {
   console.log('Send stress results function triggered');
-  console.log('RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY);
   
-  // Enable CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS'
   };
   
-  // Handle preflight OPTIONS request
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+    return { statusCode: 200, headers, body: '' };
   }
   
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -33,26 +24,13 @@ exports.handler = async (event) => {
   }
 
   try {
-    // Check if API key is configured
     if (!process.env.RESEND_API_KEY) {
-      console.error('RESEND_API_KEY is not set');
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Email service not configured',
-          details: 'RESEND_API_KEY is missing'
-        })
-      };
+      throw new Error('RESEND_API_KEY not configured');
     }
 
-    // Parse the request body
     const data = JSON.parse(event.body);
     const { userEmail, results, userName } = data;
 
-    console.log('Sending stress results email to USER:', userEmail);
-
-    // Validate required fields
     if (!userEmail || !results) {
       return {
         statusCode: 400,
@@ -62,26 +40,27 @@ exports.handler = async (event) => {
     }
 
     const name = userName || userEmail.split('@')[0];
+    
+    // ✅ USING YOUR VERIFIED DOMAIN
+    const fromEmail = 'Well with Avril <noreply@lseftesda.online>';
 
-    // Email to user (THE PERSON WHO TOOK THE QUIZ)
+    // Send to user
     const userEmailResult = await resend.emails.send({
-      from: 'Well with Avril <onboarding@resend.dev>', // Keep this for now until you verify domain
-      to: [userEmail], // This sends to the user who entered their email
+      from: fromEmail,
+      to: [userEmail], // ✅ Now works with ANY email!
       subject: 'Your Stress Pattern Results from Well with Avril',
       html: generateStressUserEmailHTML(results, name)
     });
 
     console.log('Email sent to user:', userEmailResult);
 
-    // Also send a copy to yourself (admin) so you know someone took the quiz
+    // Send admin copy to yourself
     const adminEmailResult = await resend.emails.send({
-      from: 'Well with Avril <onboarding@resend.dev>',
-      to: ['wellwithavril02@gmail.com'], // This sends to YOU
+      from: fromEmail,
+      to: ['wellwithavril02@gmail.com'],
       subject: `[ADMIN] New Stress Pattern Results: ${results.totalChecked} patterns - ${userEmail}`,
       html: generateStressAdminEmailHTML(results, userEmail, name)
     });
-
-    console.log('Admin copy email sent:', adminEmailResult);
 
     return {
       statusCode: 200,
@@ -89,17 +68,12 @@ exports.handler = async (event) => {
       body: JSON.stringify({ 
         message: 'Results sent successfully',
         sentTo: userEmail,
-        adminNotified: true
+        id: userEmailResult.id
       })
     };
 
   } catch (error) {
     console.error('Resend error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
-    });
     
     return {
       statusCode: 500,
